@@ -1,15 +1,14 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arc Testnet AI Agent Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="application/javascript"></script>
     <style>
         body {
             background-color: #0d1117;
             color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -26,15 +25,8 @@
             text-align: center;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
         }
-        h2 {
-            margin-top: 0;
-            font-size: 24px;
-        }
-        p {
-            color: #8b949e;
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
+        h2 { margin-top: 0; font-size: 24px; }
+        p { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
         .btn {
             background-color: #1f6feb;
             color: white;
@@ -47,9 +39,7 @@
             width: 100%;
             transition: background-color 0.2s;
         }
-        .btn:hover {
-            background-color: #388bfd;
-        }
+        .btn:hover { background-color: #388bfd; }
         .status-box {
             background-color: #0d1117;
             border: 1px solid #30363d;
@@ -76,7 +66,7 @@
         <h2>🤖 Arc Testnet AI Agent</h2>
         <p>Autonomous Blockchain Agent Dashboard</p>
 
-        <button id="connectBtn" class="btn">Connect MetaMask</button>
+        <button id="connectBtn" class="btn">Connect Wallet</button>
 
         <div id="walletStatus" class="status-box">
             Wallet Status: Not Connected
@@ -88,31 +78,40 @@
     </div>
 
     <script>
-        document.getElementById("connectBtn").addEventListener("click", async () => {
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    // Ethers.js provider ইনিশিয়ালাইজেশন
-                    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-                    
-                    // অ্যাকাউন্ট এক্সেস চাওয়া
-                    await provider.send("eth_requestAccounts", []);
-                    
-                    const signer = provider.getSigner();
-                    const address = await signer.getAddress();
+        const connectBtn = document.getElementById("connectBtn");
+        const walletStatus = document.getElementById("walletStatus");
 
-                    // ওয়ালেট যুক্ত হলে ইউআই আপডেট
-                    document.getElementById("walletStatus").innerHTML = 
-                        "<strong>Connected Wallet:</strong><br>" + address;
-                    document.getElementById("connectBtn").innerText = "Wallet Connected";
-                    document.getElementById("connectBtn").style.backgroundColor = "#238636";
-                } catch (error) {
-                    console.error("MetaMask Error:", error);
-                    alert("স্বয়ংক্রিয় কানেকশন ফেল করেছে! অনুগ্রহ করে আপনার MetaMask এক্সটেনশনে গিয়ে ওপরের নেটওয়ার্কটি 'Solana' থেকে বদলে 'Ethereum Mainnet' বা যেকোনো EVM নেটওয়ার্ক সিলেক্ট করে আবার চেষ্টা করুন।");
-                }
-            } else {
-                alert("আপনার ব্রাউজারে MetaMask এক্সটেনশনটি ইনস্টল করা নেই!");
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                alert("MetaMask extension is not installed!");
+                return;
             }
-        });
+
+            try {
+                // ১. সরাসরি একাউন্ট পারমিশন চাওয়া
+                const accounts = await window.ethereum.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+
+                if (accounts && accounts.length > 0) {
+                    const address = accounts[0];
+                    walletStatus.innerHTML = "<strong>Connected:</strong><br>" + address;
+                    connectBtn.innerText = "Wallet Connected";
+                    connectBtn.style.backgroundColor = "#238636";
+                }
+            } catch (error) {
+                console.error("Connection error:", error);
+                
+                // যদি ব্যাকগ্রাউন্ডে পেন্ডিং থাকে
+                if (error.code === -32002) {
+                    alert("A connection request is already pending. Please open your MetaMask extension icon at the top right to approve it!");
+                } else {
+                    alert("Connection failed! Please make sure MetaMask is unlocked and set to Ethereum Mainnet.");
+                }
+            }
+        }
+
+        connectBtn.addEventListener("click", connectWallet);
     </script>
 
 </body>
