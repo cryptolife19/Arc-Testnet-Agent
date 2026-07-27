@@ -15,6 +15,13 @@ button{ width:100%; padding:14px; font-size:16px; border:none; border-radius:8px
 button:hover{ background:#1d4ed8; }
 .box{ margin-top:18px; padding:14px; background:#0d1117; border:1px solid #30363d; border-radius:8px; word-break:break-all; }
 .green{ color:#22c55e; }
+
+/* Modal Box Styling */
+.modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
+.modal-content { background: #161b22; padding: 25px; border-radius: 12px; border: 1px solid #30363d; width: 320px; text-align: center; }
+.wallet-option { background: #21262d; border: 1px solid #30363d; color: white; padding: 12px; margin-top: 10px; border-radius: 8px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; font-weight: bold; }
+.wallet-option:hover { background: #30363d; }
+.close-btn { float: right; color: #8b949e; font-size: 20px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -23,7 +30,7 @@ button:hover{ background:#1d4ed8; }
     <h1>🤖 Arc Testnet AI Agent</h1>
     <p>Autonomous Blockchain Agent Dashboard</p>
 
-    <button id="connectBtn">Connect MetaMask</button>
+    <button id="connectBtn">Connect Wallet</button>
 
     <div class="box">
         Wallet Status<br><br>
@@ -41,45 +48,76 @@ button:hover{ background:#1d4ed8; }
     </div>
 </div>
 
+<!-- Wallet Selection Modal -->
+<div id="walletModal" class="modal">
+    <div class="modal-content">
+        <span id="closeModal" class="close-btn">&times;</span>
+        <h3>Select a Wallet</h3>
+        <div id="connectMetaMask" class="wallet-option">🦊 MetaMask</div>
+        <div id="connectPhantom" class="wallet-option">👻 Phantom / Other</div>
+    </div>
+</div>
+
 <script>
 const btn = document.getElementById("connectBtn");
+const modal = document.getElementById("walletModal");
+const closeModal = document.getElementById("closeModal");
 const wallet = document.getElementById("wallet");
 const network = document.getElementById("network");
 
-function getMetaMaskProvider() {
-    if (!window.ethereum) return null;
-    
-    // একাধিক ওয়ালেট থাকলে কেবল মেটামাস্ক প্রোভাইডার নির্বাচন করবে
-    if (window.ethereum.providers && window.ethereum.providers.length > 0) {
-        return window.ethereum.providers.find(p => p.isMetaMask && !p.isPhantom) || window.ethereum;
-    }
-    
-    return window.ethereum;
-}
+// Modal খোলা ও বন্ধ করার লজিক
+btn.onclick = () => modal.style.display = "flex";
+closeModal.onclick = () => modal.style.display = "none";
+window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; };
 
-async function connectWallet() {
-    const provider = getMetaMaskProvider();
+// MetaMask দিয়ে কানেক্ট করা
+document.getElementById("connectMetaMask").onclick = async () => {
+    modal.style.display = "none";
+    let provider = window.ethereum;
+
+    if (window.ethereum?.providers) {
+        provider = window.ethereum.providers.find(p => p.isMetaMask && !p.isPhantom) || window.ethereum;
+    }
 
     if (!provider) {
-        alert("MetaMask extension found structure issue or not installed.");
+        alert("MetaMask is not installed!");
         return;
     }
 
     try {
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const chainId = await provider.request({ method: 'eth_chainId' });
-
-        wallet.innerHTML = accounts[0];
-        network.innerHTML = "EVM Chain (ID: " + parseInt(chainId, 16) + ")";
-        btn.innerHTML = "Wallet Connected";
-        btn.style.background = "#16a34a";
-    } catch (error) {
-        console.error("MetaMask Connect Error:", error);
-        alert(error.message || "Connection failed!");
+        updateUI(accounts[0], parseInt(chainId, 16));
+    } catch (err) {
+        alert("Connection failed: " + err.message);
     }
-}
+};
 
-btn.onclick = connectWallet;
+// Phantom / Generic EVM Provider দিয়ে কানেক্ট করা
+document.getElementById("connectPhantom").onclick = async () => {
+    modal.style.display = "none";
+    const provider = window.phantom?.ethereum || window.ethereum;
+
+    if (!provider) {
+        alert("Phantom / Web3 Wallet is not installed!");
+        return;
+    }
+
+    try {
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        const chainId = await provider.request({ method: 'eth_chainId' });
+        updateUI(accounts[0], parseInt(chainId, 16));
+    } catch (err) {
+        alert("Connection failed: " + err.message);
+    }
+};
+
+function updateUI(accountAddress, chainId) {
+    wallet.innerHTML = accountAddress;
+    network.innerHTML = "EVM Chain (ID: " + chainId + ")";
+    btn.innerHTML = "Wallet Connected";
+    btn.style.background = "#16a34a";
+}
 </script>
 
 </body>
