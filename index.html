@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arc Testnet AI Agent dApp</title>
+    <title>Arc Testnet AI Agent Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="application/javascript"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #0f172a;
+            background-color: #0d1117;
             color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -16,88 +17,103 @@
             margin: 0;
         }
         .card {
-            background-color: #1e293b;
-            padding: 25px;
+            background-color: #161b22;
+            border: 1px solid #30363d;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            padding: 32px;
+            width: 100%;
+            max-width: 420px;
             text-align: center;
-            width: 380px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
         }
-        button {
-            background-color: #3b82f6;
+        h2 {
+            margin-top: 0;
+            font-size: 24px;
+        }
+        p {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .btn {
+            background-color: #1f6feb;
             color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
-            margin-top: 15px;
             width: 100%;
-            font-weight: bold;
+            transition: background-color 0.2s;
         }
-        button:hover {
-            background-color: #2563eb;
+        .btn:hover {
+            background-color: #388bfd;
         }
-        .status {
-            margin-top: 15px;
-            padding: 10px;
-            background: #334155;
-            border-radius: 6px;
-            font-size: 14px;
+        .status-box {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 16px;
+            font-size: 13px;
+            color: #c9d1d9;
             word-break: break-all;
+        }
+        .dot {
+            height: 10px;
+            width: 10px;
+            background-color: #238636;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
         }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>🤖 Arc Testnet AI Agent</h2>
-    <p>Autonomous Blockchain Agent Dashboard</p>
+    <div class="card">
+        <h2>🤖 Arc Testnet AI Agent</h2>
+        <p>Autonomous Blockchain Agent Dashboard</p>
 
-    <button id="connectBtn" onclick="connectWallet()">Connect MetaMask</button>
+        <button id="connectBtn" class="btn">Connect MetaMask</button>
 
-    <div class="status" id="walletStatus">
-        Wallet Status: Not Connected
+        <div id="walletStatus" class="status-box">
+            Wallet Status: Not Connected
+        </div>
+
+        <div class="status-box" style="margin-top: 12px;">
+            Agent Status: <span class="dot"></span>Active on GitHub Actions
+        </div>
     </div>
 
-    <div class="status" id="agentStatus">
-        Agent Status: 🟢 Active on GitHub Actions
-    </div>
-</div>
+    <script>
+        document.getElementById("connectBtn").addEventListener("click", async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    // Ethers.js provider ইনিশিয়ালাইজেশন
+                    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+                    
+                    // অ্যাকাউন্ট এক্সেস চাওয়া
+                    await provider.send("eth_requestAccounts", []);
+                    
+                    const signer = provider.getSigner();
+                    const address = await signer.getAddress();
 
-<script>
-    document.getElementById("connectBtn").addEventListener("click", async () => {
-        if (typeof window.ethereum !== 'undefined') {
-            try {
-                // ১. পারমিশন পপআপকে ফোর্স করা (যাতে Solana তে থাকলেও MetaMask EVM অ্যাকাউন্ট পপআপ দেখায়)
-                await window.ethereum.request({
-                    method: 'wallet_requestPermissions',
-                    params: [{ eth_accounts: {} }]
-                });
-
-                // ২. অ্যাকাউন্ট এড্রেস রিড করা
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                const address = accounts[0];
-
-                document.getElementById("walletStatus").innerHTML = 
-                    "<strong>Connected Wallet:</strong><br>" + address.substring(0, 6) + "..." + address.substring(address.length - 4);
-                document.getElementById("connectBtn").innerText = "Wallet Connected";
-                document.getElementById("connectBtn").style.backgroundColor = "#10b981";
-            } catch (error) {
-                console.error("MetaMask Connection Error:", error);
-                
-                // যদি ব্যবহারকারী ক্যানসেল করে বা ম্যানুয়ালি সুইচ করতে হয়
-                if (error.code === 4001) {
-                    alert("Connection request was rejected.");
-                } else {
-                    alert("Connection Failed! Please open MetaMask and manually change the top network from 'Solana' to 'Ethereum Mainnet'.");
+                    // ওয়ালেট যুক্ত হলে ইউআই আপডেট
+                    document.getElementById("walletStatus").innerHTML = 
+                        "<strong>Connected Wallet:</strong><br>" + address;
+                    document.getElementById("connectBtn").innerText = "Wallet Connected";
+                    document.getElementById("connectBtn").style.backgroundColor = "#238636";
+                } catch (error) {
+                    console.error("MetaMask Error:", error);
+                    alert("স্বয়ংক্রিয় কানেকশন ফেল করেছে! অনুগ্রহ করে আপনার MetaMask এক্সটেনশনে গিয়ে ওপরের নেটওয়ার্কটি 'Solana' থেকে বদলে 'Ethereum Mainnet' বা যেকোনো EVM নেটওয়ার্ক সিলেক্ট করে আবার চেষ্টা করুন।");
                 }
+            } else {
+                alert("আপনার ব্রাউজারে MetaMask এক্সটেনশনটি ইনস্টল করা নেই!");
             }
-        } else {
-            alert("MetaMask extension is not installed!");
-        }
-    });
-</script>
+        });
+    </script>
 
 </body>
 </html>
