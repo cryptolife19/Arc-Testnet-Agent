@@ -66,25 +66,28 @@
 </div>
 
 <script>
-    async function connectWallet() {
-        if (typeof window.ethereum !== 'undefined') {
+    document.getElementById("connectBtn").addEventListener("click", async () => {
+        if (window.ethereum) {
             try {
-                // Request account access from MetaMask
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                // Force prompt
+                const accounts = await window.ethereum.request({ 
+                    method: 'wallet_requestPermissions', 
+                    params: [{ eth_accounts: {} }] 
+                }).then(() => window.ethereum.request({ method: 'eth_requestAccounts' }));
+
                 const address = accounts[0];
-                
                 document.getElementById("walletStatus").innerHTML = 
                     "<strong>Connected Wallet:</strong><br>" + address.substring(0, 6) + "..." + address.substring(address.length - 4);
                 document.getElementById("connectBtn").innerText = "Wallet Connected";
                 document.getElementById("connectBtn").style.backgroundColor = "#10b981";
             } catch (error) {
                 console.error(error);
-                alert("Connection Request Declined or Failed!");
+                alert("Connection Failed: Please unlock MetaMask or check pending popups.");
             }
         } else {
-            alert("MetaMask extension is not installed in your browser!");
+            alert("MetaMask extension not found!");
         }
-    }
+    });
 </script>
 
 </body>
