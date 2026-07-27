@@ -1,118 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arc Testnet AI Agent Dashboard</title>
-    <style>
-        body {
-            background-color: #0d1117;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-        .card {
-            background-color: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 32px;
-            width: 100%;
-            max-width: 420px;
-            text-align: center;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-        }
-        h2 { margin-top: 0; font-size: 24px; }
-        p { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
-        .btn {
-            background-color: #1f6feb;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            transition: background-color 0.2s;
-        }
-        .btn:hover { background-color: #388bfd; }
-        .status-box {
-            background-color: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 16px;
-            font-size: 13px;
-            color: #c9d1d9;
-            word-break: break-all;
-        }
-        .dot {
-            height: 10px;
-            width: 10px;
-            background-color: #238636;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arc Testnet AI Agent</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+    background:#0d1117;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    color:white;
+}
+
+.card{
+    width:420px;
+    background:#161b22;
+    border:1px solid #30363d;
+    border-radius:15px;
+    padding:30px;
+    text-align:center;
+}
+
+h1{ margin-bottom:10px; }
+p{ color:#9ca3af; margin-bottom:25px; }
+
+button{
+    width:100%;
+    padding:14px;
+    font-size:16px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    background:#2563eb;
+    color:white;
+    font-weight:bold;
+}
+
+button:hover{ background:#1d4ed8; }
+
+.box{
+    margin-top:18px;
+    padding:14px;
+    background:#0d1117;
+    border:1px solid #30363d;
+    border-radius:8px;
+    word-break:break-all;
+}
+
+.green{ color:#22c55e; }
+.red{ color:#ef4444; }
+</style>
+
 </head>
 <body>
 
-    <div class="card">
-        <h2>🤖 Arc Testnet AI Agent</h2>
-        <p>Autonomous Blockchain Agent Dashboard</p>
+<div class="card">
+    <h1>🤖 Arc Testnet AI Agent</h1>
+    <p>Autonomous Blockchain Agent Dashboard</p>
 
-        <button id="connectBtn" class="btn">Connect Wallet</button>
+    <button id="connectBtn">Connect MetaMask</button>
 
-        <div id="walletStatus" class="status-box">
-            Wallet Status: Not Connected
-        </div>
-
-        <div class="status-box" style="margin-top: 12px;">
-            Agent Status: <span class="dot"></span>Active on GitHub Actions
-        </div>
+    <div class="box">
+        Wallet Status<br><br>
+        <span id="wallet">Not Connected</span>
     </div>
 
-    <script>
-        const connectBtn = document.getElementById("connectBtn");
-        const walletStatus = document.getElementById("walletStatus");
+    <div class="box">
+        Network<br><br>
+        <span id="network">Unknown</span>
+    </div>
 
-        async function connectWallet() {
-            if (typeof window.ethereum === 'undefined') {
-                alert("MetaMask extension is not installed!");
-                return;
-            }
+    <div class="box">
+        Agent Status<br><br>
+        <span class="green">● Active</span>
+    </div>
+</div>
 
-            try {
-                // ১. সরাসরি একাউন্ট পারমিশন চাওয়া
-                const accounts = await window.ethereum.request({ 
-                    method: 'eth_requestAccounts' 
-                });
+<script>
+const btn = document.getElementById("connectBtn");
+const wallet = document.getElementById("wallet");
+const network = document.getElementById("network");
 
-                if (accounts && accounts.length > 0) {
-                    const address = accounts[0];
-                    walletStatus.innerHTML = "<strong>Connected:</strong><br>" + address;
-                    connectBtn.innerText = "Wallet Connected";
-                    connectBtn.style.backgroundColor = "#238636";
-                }
-            } catch (error) {
-                console.error("Connection error:", error);
-                
-                // যদি ব্যাকগ্রাউন্ডে পেন্ডিং থাকে
-                if (error.code === -32002) {
-                    alert("A connection request is already pending. Please open your MetaMask extension icon at the top right to approve it!");
-                } else {
-                    alert("Connection failed! Please make sure MetaMask is unlocked and set to Ethereum Mainnet.");
-                }
-            }
+async function connectWallet(){
+    if(!window.ethereum){
+        alert("MetaMask not installed.");
+        return;
+    }
+
+    try{
+        // সরাসরি মেটামাস্ক থেকে অ্যাকাউন্ট চাওয়া
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+
+        wallet.innerHTML = accounts[0];
+        network.innerHTML = "EVM Chain (ID: " + parseInt(chainId, 16) + ")";
+        btn.innerHTML = "Wallet Connected";
+        btn.style.background = "#16a34a";
+
+    } catch(error) {
+        console.log(error);
+        if(error.code === 4001){
+            alert("Connection rejected by user.");
+        } else if(error.code === -32002) {
+            alert("A request is already pending. Click the MetaMask icon in your browser toolbar!");
+        } else {
+            alert("Please make sure MetaMask is set to Ethereum Mainnet and try again.");
         }
+    }
+}
 
-        connectBtn.addEventListener("click", connectWallet);
-    </script>
+btn.onclick = connectWallet;
+
+if(window.ethereum){
+    window.ethereum.on("accountsChanged", (accounts) => {
+        if(accounts.length){
+            wallet.innerHTML = accounts[0];
+        } else {
+            wallet.innerHTML = "Not Connected";
+            btn.innerHTML = "Connect MetaMask";
+            btn.style.background = "#2563eb";
+        }
+    });
+
+    window.ethereum.on("chainChanged", () => {
+        location.reload();
+    });
+}
+</script>
 
 </body>
 </html>
