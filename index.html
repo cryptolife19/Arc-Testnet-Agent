@@ -69,20 +69,27 @@
     document.getElementById("connectBtn").addEventListener("click", async () => {
         if (window.ethereum) {
             try {
-                // Force prompt
-                const accounts = await window.ethereum.request({ 
-                    method: 'wallet_requestPermissions', 
-                    params: [{ eth_accounts: {} }] 
-                }).then(() => window.ethereum.request({ method: 'eth_requestAccounts' }));
+                // ১. নেটওয়ার্ক ইভিম (Ethereum) এ সুইচ করার রিকোয়েস্ট
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x1' }], // Ethereum Mainnet
+                    });
+                } catch (switchError) {
+                    console.log("Network switch request sent or ignored", switchError);
+                }
 
+                // ২. অ্যাকাউন্ট কানেক্ট রিকোয়েস্ট
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 const address = accounts[0];
+
                 document.getElementById("walletStatus").innerHTML = 
                     "<strong>Connected Wallet:</strong><br>" + address.substring(0, 6) + "..." + address.substring(address.length - 4);
                 document.getElementById("connectBtn").innerText = "Wallet Connected";
                 document.getElementById("connectBtn").style.backgroundColor = "#10b981";
             } catch (error) {
                 console.error(error);
-                alert("Connection Failed: Please unlock MetaMask or check pending popups.");
+                alert("Please switch MetaMask network from Solana to Ethereum Mainnet manually and try again!");
             }
         } else {
             alert("MetaMask extension not found!");
