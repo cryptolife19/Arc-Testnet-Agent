@@ -67,19 +67,15 @@
 
 <script>
     document.getElementById("connectBtn").addEventListener("click", async () => {
-        if (window.ethereum) {
+        if (typeof window.ethereum !== 'undefined') {
             try {
-                // ১. নেটওয়ার্ক ইভিম (Ethereum) এ সুইচ করার রিকোয়েস্ট
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: '0x1' }], // Ethereum Mainnet
-                    });
-                } catch (switchError) {
-                    console.log("Network switch request sent or ignored", switchError);
-                }
+                // ১. পারমিশন পপআপকে ফোর্স করা (যাতে Solana তে থাকলেও MetaMask EVM অ্যাকাউন্ট পপআপ দেখায়)
+                await window.ethereum.request({
+                    method: 'wallet_requestPermissions',
+                    params: [{ eth_accounts: {} }]
+                });
 
-                // ২. অ্যাকাউন্ট কানেক্ট রিকোয়েস্ট
+                // ২. অ্যাকাউন্ট এড্রেস রিড করা
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 const address = accounts[0];
 
@@ -88,11 +84,17 @@
                 document.getElementById("connectBtn").innerText = "Wallet Connected";
                 document.getElementById("connectBtn").style.backgroundColor = "#10b981";
             } catch (error) {
-                console.error(error);
-                alert("Please switch MetaMask network from Solana to Ethereum Mainnet manually and try again!");
+                console.error("MetaMask Connection Error:", error);
+                
+                // যদি ব্যবহারকারী ক্যানসেল করে বা ম্যানুয়ালি সুইচ করতে হয়
+                if (error.code === 4001) {
+                    alert("Connection request was rejected.");
+                } else {
+                    alert("Connection Failed! Please open MetaMask and manually change the top network from 'Solana' to 'Ethereum Mainnet'.");
+                }
             }
         } else {
-            alert("MetaMask extension not found!");
+            alert("MetaMask extension is not installed!");
         }
     });
 </script>
