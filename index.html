@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arc Testnet AI Agent dApp</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -34,12 +33,13 @@
             font-size: 16px;
             margin-top: 15px;
             width: 100%;
+            font-weight: bold;
         }
         button:hover {
             background-color: #2563eb;
         }
         .status {
-            margin-top: 20px;
+            margin-top: 15px;
             padding: 10px;
             background: #334155;
             border-radius: 6px;
@@ -69,10 +69,9 @@
     async function connectWallet() {
         if (typeof window.ethereum !== 'undefined') {
             try {
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                const signer = provider.getSigner();
-                const address = await signer.getAddress();
+                // Request account access from MetaMask
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const address = accounts[0];
                 
                 document.getElementById("walletStatus").innerHTML = 
                     "<strong>Connected Wallet:</strong><br>" + address.substring(0, 6) + "..." + address.substring(address.length - 4);
@@ -80,10 +79,10 @@
                 document.getElementById("connectBtn").style.backgroundColor = "#10b981";
             } catch (error) {
                 console.error(error);
-                alert("Connection Failed!");
+                alert("Connection Request Declined or Failed!");
             }
         } else {
-            alert("MetaMask is not installed. Please install MetaMask!");
+            alert("MetaMask extension is not installed in your browser!");
         }
     }
 </script>
