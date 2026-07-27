@@ -6,61 +6,16 @@
 <title>Arc Testnet AI Agent</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Arial,Helvetica,sans-serif;
-}
-
-body{
-    background:#0d1117;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    color:white;
-}
-
-.card{
-    width:420px;
-    background:#161b22;
-    border:1px solid #30363d;
-    border-radius:15px;
-    padding:30px;
-    text-align:center;
-}
-
+*{ margin:0; padding:0; box-sizing:border-box; font-family:Arial,Helvetica,sans-serif; }
+body{ background:#0d1117; display:flex; justify-content:center; align-items:center; height:100vh; color:white; }
+.card{ width:420px; background:#161b22; border:1px solid #30363d; border-radius:15px; padding:30px; text-align:center; }
 h1{ margin-bottom:10px; }
 p{ color:#9ca3af; margin-bottom:25px; }
-
-button{
-    width:100%;
-    padding:14px;
-    font-size:16px;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    background:#2563eb;
-    color:white;
-    font-weight:bold;
-}
-
+button{ width:100%; padding:14px; font-size:16px; border:none; border-radius:8px; cursor:pointer; background:#2563eb; color:white; font-weight:bold; }
 button:hover{ background:#1d4ed8; }
-
-.box{
-    margin-top:18px;
-    padding:14px;
-    background:#0d1117;
-    border:1px solid #30363d;
-    border-radius:8px;
-    word-break:break-all;
-}
-
+.box{ margin-top:18px; padding:14px; background:#0d1117; border:1px solid #30363d; border-radius:8px; word-break:break-all; }
 .green{ color:#22c55e; }
-.red{ color:#ef4444; }
 </style>
-
 </head>
 <body>
 
@@ -91,51 +46,40 @@ const btn = document.getElementById("connectBtn");
 const wallet = document.getElementById("wallet");
 const network = document.getElementById("network");
 
-async function connectWallet(){
-    if(!window.ethereum){
-        alert("MetaMask not installed.");
+function getMetaMaskProvider() {
+    if (!window.ethereum) return null;
+    
+    // একাধিক ওয়ালেট থাকলে কেবল মেটামাস্ক প্রোভাইডার নির্বাচন করবে
+    if (window.ethereum.providers && window.ethereum.providers.length > 0) {
+        return window.ethereum.providers.find(p => p.isMetaMask && !p.isPhantom) || window.ethereum;
+    }
+    
+    return window.ethereum;
+}
+
+async function connectWallet() {
+    const provider = getMetaMaskProvider();
+
+    if (!provider) {
+        alert("MetaMask extension found structure issue or not installed.");
         return;
     }
 
-    try{
-        // সরাসরি মেটামাস্ক থেকে অ্যাকাউন্ট চাওয়া
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    try {
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        const chainId = await provider.request({ method: 'eth_chainId' });
 
         wallet.innerHTML = accounts[0];
         network.innerHTML = "EVM Chain (ID: " + parseInt(chainId, 16) + ")";
         btn.innerHTML = "Wallet Connected";
         btn.style.background = "#16a34a";
-
-    } catch(error) {
-        console.log(error);
-        if(error.code === 4001){
-            alert("Connection rejected by user.");
-        } else if(error.code === -32002) {
-            alert("A request is already pending. Click the MetaMask icon in your browser toolbar!");
-        } else {
-            alert("Please make sure MetaMask is set to Ethereum Mainnet and try again.");
-        }
+    } catch (error) {
+        console.error("MetaMask Connect Error:", error);
+        alert(error.message || "Connection failed!");
     }
 }
 
 btn.onclick = connectWallet;
-
-if(window.ethereum){
-    window.ethereum.on("accountsChanged", (accounts) => {
-        if(accounts.length){
-            wallet.innerHTML = accounts[0];
-        } else {
-            wallet.innerHTML = "Not Connected";
-            btn.innerHTML = "Connect MetaMask";
-            btn.style.background = "#2563eb";
-        }
-    });
-
-    window.ethereum.on("chainChanged", () => {
-        location.reload();
-    });
-}
 </script>
 
 </body>
