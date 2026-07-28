@@ -9,7 +9,12 @@
 *{ margin:0; padding:0; box-sizing:border-box; font-family:Arial,Helvetica,sans-serif; }
 body{ background:#0d1117; display:flex; justify-content:center; align-items:center; height:100vh; color:white; }
 .card{ width:420px; background:#161b22; border:1px solid #30363d; border-radius:15px; padding:30px; text-align:center; }
-h1{ margin-bottom:10px; }
+
+/* লোগো এবং টাইটেল স্টাইল */
+.title-container { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 8px; }
+.arc-logo { width: 38px; height: 38px; border-radius: 8px; }
+h1 { font-size: 24px; font-weight: bold; }
+
 p{ color:#9ca3af; margin-bottom:25px; }
 button{ width:100%; padding:14px; font-size:16px; border:none; border-radius:8px; cursor:pointer; background:#2563eb; color:white; font-weight:bold; }
 button:hover{ background:#1d4ed8; }
@@ -27,7 +32,11 @@ button:hover{ background:#1d4ed8; }
 <body>
 
 <div class="card">
-    <h1>🤖 Arc Testnet AI Agent</h1>
+    <div class="title-container">
+        <!-- নতুন Arc লোগো ইমেজ -->
+        <img src="arc-logo.png" alt="Arc Logo" class="arc-logo">
+        <h1>Arc Testnet AI Agent</h1>
+    </div>
     <p>Autonomous Blockchain Agent Dashboard</p>
 
     <button id="connectBtn">Connect Wallet</button>
@@ -59,6 +68,7 @@ button:hover{ background:#1d4ed8; }
 </div>
 
 <script>
+// (এখানে আপনার আগের মোডাল এবং ওয়ালেট কানেকশন লজিক থাকবে)
 const btn = document.getElementById("connectBtn");
 const modal = document.getElementById("walletModal");
 const closeModal = document.getElementById("closeModal");
