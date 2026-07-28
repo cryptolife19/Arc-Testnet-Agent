@@ -1,121 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arc Testnet AI Agent</title>
-
-<style>
-*{ margin:0; padding:0; box-sizing:border-box; font-family:Arial,Helvetica,sans-serif; }
-body{ background:#0d1117; display:flex; justify-content:center; align-items:center; height:100vh; color:white; }
-.card{ width:420px; background:#161b22; border:1px solid #30363d; border-radius:15px; padding:30px; text-align:center; }
-
-/* Arc Logo Style */
-.title-container { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 8px; }
-.arc-logo-box {
-    width: 40px;
-    height: 40px;
-    background-color: #102a56;
-    border: 1px solid #1e3a8a;
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-.arc-logo-box svg { width: 24px; height: 24px; fill: white; }
-
-h1 { font-size: 24px; font-weight: bold; }
-p{ color:#9ca3af; margin-bottom:25px; }
-
-/* Action Buttons Container (Stacked Vertically) */
-.btn-group { display: flex; flex-direction: column; gap: 10px; }
-button { width:100%; padding:14px; font-size:16px; border:none; border-radius:8px; cursor:pointer; background:#2563eb; color:white; font-weight:bold; transition: 0.2s; }
-button:hover { background:#1d4ed8; }
-.disconnect-btn { background: #dc2626; display: none; }
-.disconnect-btn:hover { background: #b91c1c; }
-
-.box{ margin-top:18px; padding:14px; background:#0d1117; border:1px solid #30363d; border-radius:8px; word-break:break-all; }
-.green{ color:#22c55e; }
-
-/* Modal Box Styling */
-.modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
-.modal-content { background: #161b22; padding: 25px; border-radius: 12px; border: 1px solid #30363d; width: 340px; text-align: center; }
-.wallet-option { background: #21262d; border: 1px solid #30363d; color: white; padding: 12px; margin-top: 10px; border-radius: 8px; cursor: pointer; display: flex; justify-content: flex-start; align-items: center; padding-left: 20px; gap: 12px; font-weight: bold; }
-.wallet-option:hover { background: #30363d; }
-.close-btn { float: right; color: #8b949e; font-size: 20px; cursor: pointer; }
-
-/* Wallet Icon Styling */
-.wallet-icon { width: 22px; height: 22px; display: inline-block; vertical-align: middle; }
-</style>
-</head>
-<body>
-
-<div class="card">
-    <div class="title-container">
-        <div class="arc-logo-box">
-            <svg viewBox="0 0 24 24">
-                <path d="M12 4L3 19h4.5l1.8-3h5.4l1.8 3H21L12 4zm0 4.5l2.1 3.5H9.9L12 8.5z"/>
-            </svg>
-        </div>
-        <h1>Arc Testnet AI Agent</h1>
-    </div>
-    <p>Autonomous Blockchain Agent Dashboard</p>
-
-    <div class="btn-group">
-        <button id="connectBtn">Connect Wallet</button>
-        <button id="disconnectBtn" class="disconnect-btn">Disconnect</button>
-    </div>
-
-    <div class="box">
-        Wallet Status<br><br>
-        <span id="wallet">Not Connected</span>
-    </div>
-
-    <div class="box">
-        Network<br><br>
-        <span id="network">Unknown</span>
-    </div>
-
-    <div class="box">
-        Agent Status<br><br>
-        <span class="green">● Active</span>
-    </div>
-</div>
-
-<!-- Wallet Selection Modal -->
-<div id="walletModal" class="modal">
-    <div class="modal-content">
-        <span id="closeModal" class="close-btn">&times;</span>
-        <h3 style="margin-bottom: 10px;">Select a Wallet</h3>
-        <div id="connectMetaMask" class="wallet-option">
-            🦊 MetaMask
-        </div>
-        <div id="connectPhantom" class="wallet-option">
-            👻 Phantom
-        </div>
-        <div id="connectOKX" class="wallet-option">
-            ⬛ OKX Wallet
-        </div>
-        <div id="connectBitget" class="wallet-option">
-            <svg class="wallet-icon" viewBox="0 0 32 32">
-                <rect width="32" height="32" rx="6" fill="#00f0ff"/>
-                <path d="M9 11l7 7 7-7H9z" fill="#0d1117"/>
-            </svg>
-            Bitget Wallet
-        </div>
-        <div id="connectCoinbase" class="wallet-option">
-            🔵 Coinbase Wallet
-        </div>
-        <div id="connectRabby" class="wallet-option">
-            🐰 Rabby Wallet
-        </div>
-        <div id="connectGeneric" class="wallet-option">
-            🌐 Other EVM Wallet
-        </div>
-    </div>
-</div>
-
 <script>
 const btn = document.getElementById("connectBtn");
 const disconnectBtn = document.getElementById("disconnectBtn");
@@ -134,11 +16,22 @@ btn.onclick = () => {
 closeModal.onclick = () => modal.style.display = "none";
 window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; };
 
-// 1. MetaMask
+// UI Update Function
+function updateUIConnected(accountAddress, chainId) {
+    wallet.innerHTML = accountAddress;
+    network.innerHTML = "EVM Chain (ID: " + chainId + ")";
+    btn.innerHTML = "Wallet Connected";
+    btn.style.background = "#16a34a";
+    btn.style.cursor = "default";
+    disconnectBtn.style.display = "block";
+}
+
+// 1. MetaMask Special Bulletproof Logic
 document.getElementById("connectMetaMask").onclick = async () => {
     modal.style.display = "none";
     let provider = window.ethereum;
 
+    // Filter out MetaMask specifically if multiple providers exist
     if (window.ethereum?.providers) {
         provider = window.ethereum.providers.find(p => p.isMetaMask && !p.isPhantom && !p.isBitget) || window.ethereum;
     }
@@ -150,10 +43,12 @@ document.getElementById("connectMetaMask").onclick = async () => {
 
     try {
         currentActiveProvider = provider;
+
+        // Direct accounts request without permissions method wrapper to avoid 'must have at least one account' error
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        
+
         if (!accounts || accounts.length === 0) {
-            alert("Please unlock your MetaMask wallet!");
+            alert("Please unlock MetaMask and select an account!");
             return;
         }
 
@@ -161,15 +56,15 @@ document.getElementById("connectMetaMask").onclick = async () => {
         updateUIConnected(accounts[0], parseInt(chainId, 16));
     } catch (err) {
         if (err.code === -32002) {
-            alert("MetaMask request is already pending. Please open your MetaMask extension popup!");
+            alert("MetaMask popup is already open. Please check your browser extension bar!");
         } else {
-            alert("Connection failed: " + err.message);
+            alert("MetaMask Connection Error: " + err.message);
         }
     }
 };
 
-// Generic Specific Wallet Function
-async function connectSpecificWallet(provider, walletName) {
+// Generic Function for Other Wallets
+async function connectOtherWallet(provider, walletName) {
     modal.style.display = "none";
 
     if (!provider) {
@@ -190,43 +85,34 @@ async function connectSpecificWallet(provider, walletName) {
 
 // 2. Phantom
 document.getElementById("connectPhantom").onclick = () => {
-    connectSpecificWallet(window.phantom?.ethereum, "Phantom");
+    connectOtherWallet(window.phantom?.ethereum, "Phantom");
 };
 
 // 3. OKX Wallet
 document.getElementById("connectOKX").onclick = () => {
-    connectSpecificWallet(window.okxwallet, "OKX Wallet");
+    connectOtherWallet(window.okxwallet, "OKX Wallet");
 };
 
 // 4. Bitget Wallet
 document.getElementById("connectBitget").onclick = () => {
     const provider = window.bitkeep?.ethereum || window.bitgetWallet;
-    connectSpecificWallet(provider, "Bitget Wallet");
+    connectOtherWallet(provider, "Bitget Wallet");
 };
 
 // 5. Coinbase Wallet
 document.getElementById("connectCoinbase").onclick = () => {
-    connectSpecificWallet(window.coinbaseWalletExtension, "Coinbase Wallet");
+    connectOtherWallet(window.coinbaseWalletExtension, "Coinbase Wallet");
 };
 
 // 6. Rabby Wallet
 document.getElementById("connectRabby").onclick = () => {
-    connectSpecificWallet(window.rabby, "Rabby Wallet");
+    connectOtherWallet(window.rabby, "Rabby Wallet");
 };
 
 // 7. Generic EVM Wallet
 document.getElementById("connectGeneric").onclick = () => {
-    connectSpecificWallet(window.ethereum, "EVM Wallet");
+    connectOtherWallet(window.ethereum, "EVM Wallet");
 };
-
-function updateUIConnected(accountAddress, chainId) {
-    wallet.innerHTML = accountAddress;
-    network.innerHTML = "EVM Chain (ID: " + chainId + ")";
-    btn.innerHTML = "Wallet Connected";
-    btn.style.background = "#16a34a";
-    btn.style.cursor = "default";
-    disconnectBtn.style.display = "block";
-}
 
 // Disconnect Logic
 disconnectBtn.onclick = async () => {
@@ -237,7 +123,7 @@ disconnectBtn.onclick = async () => {
                 params: [{ eth_accounts: {} }]
             });
         } catch (err) {
-            console.log("Revoke permission failed:", err);
+            console.log("Revoke failed/skipped:", err);
         }
     }
 
@@ -250,6 +136,3 @@ disconnectBtn.onclick = async () => {
     disconnectBtn.style.display = "none";
 };
 </script>
-
-</body>
-</html>
