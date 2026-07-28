@@ -98,7 +98,6 @@ const closeModal = document.getElementById("closeModal");
 const wallet = document.getElementById("wallet");
 const network = document.getElementById("network");
 
-// Modal খোলা ও বন্ধ করা
 btn.onclick = () => {
     if (btn.innerText === "Connect Wallet") {
         modal.style.display = "flex";
@@ -122,6 +121,12 @@ document.getElementById("connectMetaMask").onclick = async () => {
     }
 
     try {
+        // wallet_requestPermissions ব্যবহার করলে প্রতিবার পপআপ ওপেন হবে
+        await provider.request({
+            method: "wallet_requestPermissions",
+            params: [{ eth_accounts: {} }]
+        });
+        
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const chainId = await provider.request({ method: 'eth_chainId' });
         updateUIConnected(accounts[0], parseInt(chainId, 16));
@@ -149,40 +154,41 @@ document.getElementById("connectPhantom").onclick = async () => {
     }
 };
 
-// UI Connected অবস্থায় আনা
 function updateUIConnected(accountAddress, chainId) {
     wallet.innerHTML = accountAddress;
     network.innerHTML = "EVM Chain (ID: " + chainId + ")";
     btn.innerHTML = "Wallet Connected";
     btn.style.background = "#16a34a";
     btn.style.cursor = "default";
-    disconnectBtn.style.display = "block"; // Disconnect বাটন দেখানো
+    disconnectBtn.style.display = "block";
 }
 
-// Disconnect লজিক
-disconnectBtn.onclick = () => {
+// Disconnect করার লজিক (মেটামাস্ক পারমিশন রিমুভ করে দেবে)
+disconnectBtn.onclick = async () => {
+    let provider = window.ethereum;
+
+    if (window.ethereum?.providers) {
+        provider = window.ethereum.providers.find(p => p.isMetaMask && !p.isPhantom) || window.ethereum;
+    }
+
+    if (provider && provider.request) {
+        try {
+            await provider.request({
+                method: "wallet_revokePermissions",
+                params: [{ eth_accounts: {} }]
+            });
+        } catch (err) {
+            console.log("Permission revoke failed/rejected:", err);
+        }
+    }
+
     wallet.innerHTML = "Not Connected";
     network.innerHTML = "Unknown";
     btn.innerHTML = "Connect Wallet";
     btn.style.background = "#2563eb";
     btn.style.cursor = "pointer";
-    disconnectBtn.style.display = "none"; // Disconnect বাটন লুকানো
+    disconnectBtn.style.display = "none";
 };
-
-// ওয়ালেটে একাউন্ট বা নেটওয়ার্ক চেঞ্জ হলে অটো আপডেট
-if(window.ethereum){
-    window.ethereum.on("accountsChanged", (accounts) => {
-        if(accounts.length){
-            wallet.innerHTML = accounts[0];
-        } else {
-            disconnectBtn.click();
-        }
-    });
-
-    window.ethereum.on("chainChanged", () => {
-        location.reload();
-    });
-}
 </script>
 
 </body>
