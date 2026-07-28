@@ -10,7 +10,7 @@
 body{ background:#0d1117; display:flex; justify-content:center; align-items:center; height:100vh; color:white; }
 .card{ width:420px; background:#161b22; border:1px solid #30363d; border-radius:15px; padding:30px; text-align:center; }
 
-/* Arc Logo Custom Style */
+/* Arc Logo Style */
 .title-container { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 8px; }
 .arc-logo-box {
     width: 40px;
@@ -23,16 +23,18 @@ body{ background:#0d1117; display:flex; justify-content:center; align-items:cent
     align-items: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-.arc-logo-box svg {
-    width: 24px;
-    height: 24px;
-    fill: white;
-}
+.arc-logo-box svg { width: 24px; height: 24px; fill: white; }
 
 h1 { font-size: 24px; font-weight: bold; }
 p{ color:#9ca3af; margin-bottom:25px; }
-button{ width:100%; padding:14px; font-size:16px; border:none; border-radius:8px; cursor:pointer; background:#2563eb; color:white; font-weight:bold; }
-button:hover{ background:#1d4ed8; }
+
+/* Action Buttons Container */
+.btn-group { display: flex; gap: 10px; }
+button { width:100%; padding:14px; font-size:16px; border:none; border-radius:8px; cursor:pointer; background:#2563eb; color:white; font-weight:bold; transition: 0.2s; }
+button:hover { background:#1d4ed8; }
+.disconnect-btn { background: #dc2626; display: none; }
+.disconnect-btn:hover { background: #b91c1c; }
+
 .box{ margin-top:18px; padding:14px; background:#0d1117; border:1px solid #30363d; border-radius:8px; word-break:break-all; }
 .green{ color:#22c55e; }
 
@@ -48,7 +50,6 @@ button:hover{ background:#1d4ed8; }
 
 <div class="card">
     <div class="title-container">
-        <!-- Exact Arc 'A' Icon Vector -->
         <div class="arc-logo-box">
             <svg viewBox="0 0 24 24">
                 <path d="M12 4L3 19h4.5l1.8-3h5.4l1.8 3H21L12 4zm0 4.5l2.1 3.5H9.9L12 8.5z"/>
@@ -58,7 +59,10 @@ button:hover{ background:#1d4ed8; }
     </div>
     <p>Autonomous Blockchain Agent Dashboard</p>
 
-    <button id="connectBtn">Connect Wallet</button>
+    <div class="btn-group">
+        <button id="connectBtn">Connect Wallet</button>
+        <button id="disconnectBtn" class="disconnect-btn">Disconnect</button>
+    </div>
 
     <div class="box">
         Wallet Status<br><br>
@@ -88,15 +92,22 @@ button:hover{ background:#1d4ed8; }
 
 <script>
 const btn = document.getElementById("connectBtn");
+const disconnectBtn = document.getElementById("disconnectBtn");
 const modal = document.getElementById("walletModal");
 const closeModal = document.getElementById("closeModal");
 const wallet = document.getElementById("wallet");
 const network = document.getElementById("network");
 
-btn.onclick = () => modal.style.display = "flex";
+// Modal খোলা ও বন্ধ করা
+btn.onclick = () => {
+    if (btn.innerText === "Connect Wallet") {
+        modal.style.display = "flex";
+    }
+};
 closeModal.onclick = () => modal.style.display = "none";
 window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; };
 
+// MetaMask দিয়ে কানেক্ট
 document.getElementById("connectMetaMask").onclick = async () => {
     modal.style.display = "none";
     let provider = window.ethereum;
@@ -113,12 +124,13 @@ document.getElementById("connectMetaMask").onclick = async () => {
     try {
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const chainId = await provider.request({ method: 'eth_chainId' });
-        updateUI(accounts[0], parseInt(chainId, 16));
+        updateUIConnected(accounts[0], parseInt(chainId, 16));
     } catch (err) {
         alert("Connection failed: " + err.message);
     }
 };
 
+// Phantom / Other দিয়ে কানেক্ট
 document.getElementById("connectPhantom").onclick = async () => {
     modal.style.display = "none";
     const provider = window.phantom?.ethereum || window.ethereum;
@@ -131,17 +143,45 @@ document.getElementById("connectPhantom").onclick = async () => {
     try {
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const chainId = await provider.request({ method: 'eth_chainId' });
-        updateUI(accounts[0], parseInt(chainId, 16));
+        updateUIConnected(accounts[0], parseInt(chainId, 16));
     } catch (err) {
         alert("Connection failed: " + err.message);
     }
 };
 
-function updateUI(accountAddress, chainId) {
+// UI Connected অবস্থায় আনা
+function updateUIConnected(accountAddress, chainId) {
     wallet.innerHTML = accountAddress;
     network.innerHTML = "EVM Chain (ID: " + chainId + ")";
     btn.innerHTML = "Wallet Connected";
     btn.style.background = "#16a34a";
+    btn.style.cursor = "default";
+    disconnectBtn.style.display = "block"; // Disconnect বাটন দেখানো
+}
+
+// Disconnect লজিক
+disconnectBtn.onclick = () => {
+    wallet.innerHTML = "Not Connected";
+    network.innerHTML = "Unknown";
+    btn.innerHTML = "Connect Wallet";
+    btn.style.background = "#2563eb";
+    btn.style.cursor = "pointer";
+    disconnectBtn.style.display = "none"; // Disconnect বাটন লুকানো
+};
+
+// ওয়ালেটে একাউন্ট বা নেটওয়ার্ক চেঞ্জ হলে অটো আপডেট
+if(window.ethereum){
+    window.ethereum.on("accountsChanged", (accounts) => {
+        if(accounts.length){
+            wallet.innerHTML = accounts[0];
+        } else {
+            disconnectBtn.click();
+        }
+    });
+
+    window.ethereum.on("chainChanged", () => {
+        location.reload();
+    });
 }
 </script>
 
