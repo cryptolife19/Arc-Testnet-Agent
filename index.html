@@ -28,8 +28,8 @@ body{ background:#0d1117; display:flex; justify-content:center; align-items:cent
 h1 { font-size: 24px; font-weight: bold; }
 p{ color:#9ca3af; margin-bottom:25px; }
 
-/* Action Buttons Container */
-.btn-group { display: flex; gap: 10px; }
+/* Action Buttons Container (Stacked Vertically) */
+.btn-group { display: flex; flex-direction: column; gap: 10px; }
 button { width:100%; padding:14px; font-size:16px; border:none; border-radius:8px; cursor:pointer; background:#2563eb; color:white; font-weight:bold; transition: 0.2s; }
 button:hover { background:#1d4ed8; }
 .disconnect-btn { background: #dc2626; display: none; }
@@ -121,7 +121,6 @@ document.getElementById("connectMetaMask").onclick = async () => {
     }
 
     try {
-        // wallet_requestPermissions ব্যবহার করলে প্রতিবার পপআপ ওপেন হবে
         await provider.request({
             method: "wallet_requestPermissions",
             params: [{ eth_accounts: {} }]
@@ -163,7 +162,7 @@ function updateUIConnected(accountAddress, chainId) {
     disconnectBtn.style.display = "block";
 }
 
-// Disconnect করার লজিক (মেটামাস্ক পারমিশন রিমুভ করে দেবে)
+// Disconnect করার লজিক
 disconnectBtn.onclick = async () => {
     let provider = window.ethereum;
 
