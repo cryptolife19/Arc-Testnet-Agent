@@ -28,7 +28,7 @@ body{ background:#0d1117; display:flex; justify-content:center; align-items:cent
 h1 { font-size: 24px; font-weight: bold; }
 p{ color:#9ca3af; margin-bottom:25px; }
 
-/* Action Buttons Container (Stacked Vertically) */
+/* Action Buttons Container */
 .btn-group { display: flex; flex-direction: column; gap: 10px; }
 button { width:100%; padding:14px; font-size:16px; border:none; border-radius:8px; cursor:pointer; background:#2563eb; color:white; font-weight:bold; transition: 0.2s; }
 button:hover { background:#1d4ed8; }
@@ -134,7 +134,6 @@ btn.onclick = () => {
 closeModal.onclick = () => modal.style.display = "none";
 window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; };
 
-// UI Update Function
 function updateUIConnected(accountAddress, chainId) {
     wallet.innerHTML = accountAddress;
     network.innerHTML = "EVM Chain (ID: " + chainId + ")";
@@ -144,41 +143,37 @@ function updateUIConnected(accountAddress, chainId) {
     disconnectBtn.style.display = "block";
 }
 
-// 1. MetaMask
+// 1. Fixed Direct MetaMask Connection
 document.getElementById("connectMetaMask").onclick = async () => {
     modal.style.display = "none";
-    let provider = window.ethereum;
 
-    if (window.ethereum?.providers) {
-        provider = window.ethereum.providers.find(p => p.isMetaMask && !p.isPhantom && !p.isBitget) || window.ethereum;
+    let provider = window.ethereum;
+    if (window.ethereum?.providers?.length) {
+        provider = window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum;
     }
 
     if (!provider) {
-        alert("MetaMask extension is not installed!");
+        alert("MetaMask extension is not detected!");
         return;
     }
 
     try {
         currentActiveProvider = provider;
+        
+        // Simple direct request
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-
-        if (!accounts || accounts.length === 0) {
-            alert("Please unlock MetaMask and select an account!");
-            return;
+        
+        if (accounts && accounts.length > 0) {
+            const chainId = await provider.request({ method: 'eth_chainId' });
+            updateUIConnected(accounts[0], parseInt(chainId, 16));
         }
-
-        const chainId = await provider.request({ method: 'eth_chainId' });
-        updateUIConnected(accounts[0], parseInt(chainId, 16));
     } catch (err) {
-        if (err.code === -32002) {
-            alert("MetaMask popup is already open. Please check your browser extension bar!");
-        } else {
-            alert("MetaMask Connection Error: " + err.message);
-        }
+        console.error(err);
+        alert("MetaMask Error: " + (err.message || "Please unlock your MetaMask extension manually!"));
     }
 };
 
-// Generic Function for Other Wallets
+// Generic Connect Function for Other Wallets
 async function connectOtherWallet(provider, walletName) {
     modal.style.display = "none";
 
@@ -238,7 +233,7 @@ disconnectBtn.onclick = async () => {
                 params: [{ eth_accounts: {} }]
             });
         } catch (err) {
-            console.log("Revoke failed/skipped:", err);
+            console.log("Revoke skipped/failed:", err);
         }
     }
 
