@@ -10,11 +10,26 @@
 body{ background:#0d1117; display:flex; justify-content:center; align-items:center; height:100vh; color:white; }
 .card{ width:420px; background:#161b22; border:1px solid #30363d; border-radius:15px; padding:30px; text-align:center; }
 
-/* লোগো এবং টাইটেল স্টাইল */
+/* Arc Logo Custom Style */
 .title-container { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 8px; }
-.arc-logo { width: 38px; height: 38px; border-radius: 8px; }
-h1 { font-size: 24px; font-weight: bold; }
+.arc-logo-box {
+    width: 40px;
+    height: 40px;
+    background-color: #102a56;
+    border: 1px solid #1e3a8a;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.arc-logo-box svg {
+    width: 24px;
+    height: 24px;
+    fill: white;
+}
 
+h1 { font-size: 24px; font-weight: bold; }
 p{ color:#9ca3af; margin-bottom:25px; }
 button{ width:100%; padding:14px; font-size:16px; border:none; border-radius:8px; cursor:pointer; background:#2563eb; color:white; font-weight:bold; }
 button:hover{ background:#1d4ed8; }
@@ -33,8 +48,12 @@ button:hover{ background:#1d4ed8; }
 
 <div class="card">
     <div class="title-container">
-        <!-- নতুন Arc লোগো ইমেজ -->
-        <img src="https://raw.githubusercontent.com/walletconnect/walletconnect-assets/master/Icon/Gradient/Icon.png" alt="Arc Logo" class="arc-logo">
+        <!-- Exact Arc 'A' Icon Vector -->
+        <div class="arc-logo-box">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 4L3 19h4.5l1.8-3h5.4l1.8 3H21L12 4zm0 4.5l2.1 3.5H9.9L12 8.5z"/>
+            </svg>
+        </div>
         <h1>Arc Testnet AI Agent</h1>
     </div>
     <p>Autonomous Blockchain Agent Dashboard</p>
@@ -68,19 +87,16 @@ button:hover{ background:#1d4ed8; }
 </div>
 
 <script>
-// (এখানে আপনার আগের মোডাল এবং ওয়ালেট কানেকশন লজিক থাকবে)
 const btn = document.getElementById("connectBtn");
 const modal = document.getElementById("walletModal");
 const closeModal = document.getElementById("closeModal");
 const wallet = document.getElementById("wallet");
 const network = document.getElementById("network");
 
-// Modal খোলা ও বন্ধ করার লজিক
 btn.onclick = () => modal.style.display = "flex";
 closeModal.onclick = () => modal.style.display = "none";
 window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; };
 
-// MetaMask দিয়ে কানেক্ট করা
 document.getElementById("connectMetaMask").onclick = async () => {
     modal.style.display = "none";
     let provider = window.ethereum;
@@ -103,7 +119,6 @@ document.getElementById("connectMetaMask").onclick = async () => {
     }
 };
 
-// Phantom / Generic EVM Provider দিয়ে কানেক্ট করা
 document.getElementById("connectPhantom").onclick = async () => {
     modal.style.display = "none";
     const provider = window.phantom?.ethereum || window.ethereum;
