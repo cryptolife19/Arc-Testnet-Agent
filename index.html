@@ -112,6 +112,14 @@ const wallet = document.getElementById("wallet");
 const network = document.getElementById("network");
 
 let currentActiveProvider = null;
+const eip6963Providers = new Map();
+
+// 📌 EIP-6963 Provider Discovery
+window.addEventListener("eip6963:announceProvider", (event) => {
+    const { info, provider } = event.detail;
+    eip6963Providers.set(info.rdns, provider);
+});
+window.dispatchEvent(new Event("eip6963:requestProvider"));
 
 btn.onclick = () => {
     if (btn.innerText === "Connect Wallet") {
@@ -130,52 +138,44 @@ function updateUIConnected(accountAddress, chainId) {
     disconnectBtn.style.display = "block";
 }
 
-// 📌 Force MetaMask Provider Resolver (solves extension conflicts)
-function getMetaMaskProvider() {
-    if (!window.ethereum) return null;
-
-    if (window.ethereum.providers) {
-        return window.ethereum.providers.find(provider => provider.isMetaMask);
-    }
-
-    if (window.ethereum.isMetaMask) {
-        return window.ethereum;
-    }
-
-    return null;
-}
-
-// 1. MetaMask Connector with Forced Provider
+// 📌 1. MetaMask Connector (EIP-6963 First)
 document.getElementById("connectMetaMask").onclick = async () => {
     modal.style.display = "none";
-    const provider = getMetaMaskProvider();
+    
+    // Check EIP-6963 provider for MetaMask first
+    let provider = eip6963Providers.get("io.metamask");
+
+    // Fallback if EIP-6963 isn't available
+    if (!provider) {
+        if (window.ethereum?.providers) {
+            provider = window.ethereum.providers.find(p => p.isMetaMask && !p.isPhantom && !p.isBitget);
+        } else if (window.ethereum?.isMetaMask) {
+            provider = window.ethereum;
+        }
+    }
 
     if (!provider) {
-        alert("MetaMask not found or enabled in browser!");
+        alert("MetaMask extension is not found or enabled!");
         return;
     }
 
     try {
         currentActiveProvider = provider;
-
-        // Force request accounts directly to trigger MetaMask popup
-        const accounts = await provider.request({
-            method: "eth_requestAccounts"
-        });
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
 
         if (!accounts || accounts.length === 0) {
-            alert("Please unlock MetaMask and ensure at least one account exists!");
+            alert("Please unlock your MetaMask wallet!");
             return;
         }
 
-        const chainId = await provider.request({ method: "eth_chainId" });
+        const chainId = await provider.request({ method: 'eth_chainId' });
         updateUIConnected(accounts[0], parseInt(chainId, 16));
     } catch (err) {
         alert("MetaMask Connection Error: " + err.message);
     }
 };
 
-// Generic Connector for Other Wallets
+// Generic Function for Other Wallets
 async function connectOtherWallet(provider, walletName) {
     modal.style.display = "none";
 
@@ -195,13 +195,40 @@ async function connectOtherWallet(provider, walletName) {
     }
 }
 
-// Other Wallets
-document.getElementById("connectPhantom").onclick = () => connectOtherWallet(window.phantom?.ethereum, "Phantom");
-document.getElementById("connectOKX").onclick = () => connectOtherWallet(window.okxwallet, "OKX Wallet");
-document.getElementById("connectBitget").onclick = () => connectOtherWallet(window.bitkeep?.ethereum || window.bitgetWallet, "Bitget Wallet");
-document.getElementById("connectCoinbase").onclick = () => connectOtherWallet(window.coinbaseWalletExtension, "Coinbase Wallet");
-document.getElementById("connectRabby").onclick = () => connectOtherWallet(window.rabby, "Rabby Wallet");
-document.getElementById("connectGeneric").onclick = () => connectOtherWallet(window.ethereum, "EVM Wallet");
+// 2. Phantom
+document.getElementById("connectPhantom").onclick = () => {
+    const provider = eip6963Providers.get("app.phantom") || window.phantom?.ethereum;
+    connectOtherWallet(provider, "Phantom");
+};
+
+// 3. OKX Wallet
+document.getElementById("connectOKX").onclick = () => {
+    const provider = eip6963Providers.get("com.okex.wallet") || window.okxwallet;
+    connectOtherWallet(provider, "OKX Wallet");
+};
+
+// 4. Bitget Wallet
+document.getElementById("connectBitget").onclick = () => {
+    const provider = eip6963Providers.get("com.bitget.web3") || window.bitkeep?.ethereum || window.bitgetWallet;
+    connectOtherWallet(provider, "Bitget Wallet");
+};
+
+// 5. Coinbase Wallet
+document.getElementById("connectCoinbase").onclick = () => {
+    const provider = eip6963Providers.get("com.coinbase.wallet") || window.coinbaseWalletExtension;
+    connectOtherWallet(provider, "Coinbase Wallet");
+};
+
+// 6. Rabby Wallet
+document.getElementById("connectRabby").onclick = () => {
+    const provider = eip6963Providers.get("io.rabby") || window.rabby;
+    connectOtherWallet(provider, "Rabby Wallet");
+};
+
+// 7. Generic EVM Wallet
+document.getElementById("connectGeneric").onclick = () => {
+    connectOtherWallet(window.ethereum, "EVM Wallet");
+};
 
 // Disconnect Logic
 disconnectBtn.onclick = async () => {
@@ -212,7 +239,7 @@ disconnectBtn.onclick = async () => {
                 params: [{ eth_accounts: {} }]
             });
         } catch (err) {
-            console.log("Revoke skipped:", err);
+            console.log("Revoke skipped/failed:", err);
         }
     }
 
