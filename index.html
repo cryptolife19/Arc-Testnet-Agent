@@ -45,7 +45,6 @@ button:hover { background:#1d4ed8; }
 .wallet-option:hover { background: #30363d; }
 .close-btn { float: right; color: #8b949e; font-size: 20px; cursor: pointer; }
 
-/* Wallet Icon Styling */
 .wallet-icon { width: 22px; height: 22px; display: inline-block; vertical-align: middle; }
 </style>
 </head>
@@ -83,20 +82,14 @@ button:hover { background:#1d4ed8; }
     </div>
 </div>
 
-<!-- Wallet Selection Modal -->
+<!-- Modal -->
 <div id="walletModal" class="modal">
     <div class="modal-content">
         <span id="closeModal" class="close-btn">&times;</span>
         <h3 style="margin-bottom: 10px;">Select a Wallet</h3>
-        <div id="connectMetaMask" class="wallet-option">
-            🦊 MetaMask
-        </div>
-        <div id="connectPhantom" class="wallet-option">
-            👻 Phantom
-        </div>
-        <div id="connectOKX" class="wallet-option">
-            ⬛ OKX Wallet
-        </div>
+        <div id="connectMetaMask" class="wallet-option">🦊 MetaMask</div>
+        <div id="connectPhantom" class="wallet-option">👻 Phantom</div>
+        <div id="connectOKX" class="wallet-option">⬛ OKX Wallet</div>
         <div id="connectBitget" class="wallet-option">
             <svg class="wallet-icon" viewBox="0 0 32 32">
                 <rect width="32" height="32" rx="6" fill="#00f0ff"/>
@@ -104,15 +97,9 @@ button:hover { background:#1d4ed8; }
             </svg>
             Bitget Wallet
         </div>
-        <div id="connectCoinbase" class="wallet-option">
-            🔵 Coinbase Wallet
-        </div>
-        <div id="connectRabby" class="wallet-option">
-            🐰 Rabby Wallet
-        </div>
-        <div id="connectGeneric" class="wallet-option">
-            🌐 Other EVM Wallet
-        </div>
+        <div id="connectCoinbase" class="wallet-option">🔵 Coinbase Wallet</div>
+        <div id="connectRabby" class="wallet-option">🐰 Rabby Wallet</div>
+        <div id="connectGeneric" class="wallet-option">🌐 Other EVM Wallet</div>
     </div>
 </div>
 
@@ -143,37 +130,52 @@ function updateUIConnected(accountAddress, chainId) {
     disconnectBtn.style.display = "block";
 }
 
-// 1. Fixed Direct MetaMask Connection
-document.getElementById("connectMetaMask").onclick = async () => {
-    modal.style.display = "none";
+// 📌 Force MetaMask Provider Resolver (solves extension conflicts)
+function getMetaMaskProvider() {
+    if (!window.ethereum) return null;
 
-    let provider = window.ethereum;
-    if (window.ethereum?.providers?.length) {
-        provider = window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum;
+    if (window.ethereum.providers) {
+        return window.ethereum.providers.find(provider => provider.isMetaMask);
     }
 
+    if (window.ethereum.isMetaMask) {
+        return window.ethereum;
+    }
+
+    return null;
+}
+
+// 1. MetaMask Connector with Forced Provider
+document.getElementById("connectMetaMask").onclick = async () => {
+    modal.style.display = "none";
+    const provider = getMetaMaskProvider();
+
     if (!provider) {
-        alert("MetaMask extension is not detected!");
+        alert("MetaMask not found or enabled in browser!");
         return;
     }
 
     try {
         currentActiveProvider = provider;
-        
-        // Simple direct request
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        
-        if (accounts && accounts.length > 0) {
-            const chainId = await provider.request({ method: 'eth_chainId' });
-            updateUIConnected(accounts[0], parseInt(chainId, 16));
+
+        // Force request accounts directly to trigger MetaMask popup
+        const accounts = await provider.request({
+            method: "eth_requestAccounts"
+        });
+
+        if (!accounts || accounts.length === 0) {
+            alert("Please unlock MetaMask and ensure at least one account exists!");
+            return;
         }
+
+        const chainId = await provider.request({ method: "eth_chainId" });
+        updateUIConnected(accounts[0], parseInt(chainId, 16));
     } catch (err) {
-        console.error(err);
-        alert("MetaMask Error: " + (err.message || "Please unlock your MetaMask extension manually!"));
+        alert("MetaMask Connection Error: " + err.message);
     }
 };
 
-// Generic Connect Function for Other Wallets
+// Generic Connector for Other Wallets
 async function connectOtherWallet(provider, walletName) {
     modal.style.display = "none";
 
@@ -193,36 +195,13 @@ async function connectOtherWallet(provider, walletName) {
     }
 }
 
-// 2. Phantom
-document.getElementById("connectPhantom").onclick = () => {
-    connectOtherWallet(window.phantom?.ethereum, "Phantom");
-};
-
-// 3. OKX Wallet
-document.getElementById("connectOKX").onclick = () => {
-    connectOtherWallet(window.okxwallet, "OKX Wallet");
-};
-
-// 4. Bitget Wallet
-document.getElementById("connectBitget").onclick = () => {
-    const provider = window.bitkeep?.ethereum || window.bitgetWallet;
-    connectOtherWallet(provider, "Bitget Wallet");
-};
-
-// 5. Coinbase Wallet
-document.getElementById("connectCoinbase").onclick = () => {
-    connectOtherWallet(window.coinbaseWalletExtension, "Coinbase Wallet");
-};
-
-// 6. Rabby Wallet
-document.getElementById("connectRabby").onclick = () => {
-    connectOtherWallet(window.rabby, "Rabby Wallet");
-};
-
-// 7. Generic EVM Wallet
-document.getElementById("connectGeneric").onclick = () => {
-    connectOtherWallet(window.ethereum, "EVM Wallet");
-};
+// Other Wallets
+document.getElementById("connectPhantom").onclick = () => connectOtherWallet(window.phantom?.ethereum, "Phantom");
+document.getElementById("connectOKX").onclick = () => connectOtherWallet(window.okxwallet, "OKX Wallet");
+document.getElementById("connectBitget").onclick = () => connectOtherWallet(window.bitkeep?.ethereum || window.bitgetWallet, "Bitget Wallet");
+document.getElementById("connectCoinbase").onclick = () => connectOtherWallet(window.coinbaseWalletExtension, "Coinbase Wallet");
+document.getElementById("connectRabby").onclick = () => connectOtherWallet(window.rabby, "Rabby Wallet");
+document.getElementById("connectGeneric").onclick = () => connectOtherWallet(window.ethereum, "EVM Wallet");
 
 // Disconnect Logic
 disconnectBtn.onclick = async () => {
@@ -233,7 +212,7 @@ disconnectBtn.onclick = async () => {
                 params: [{ eth_accounts: {} }]
             });
         } catch (err) {
-            console.log("Revoke skipped/failed:", err);
+            console.log("Revoke skipped:", err);
         }
     }
 
