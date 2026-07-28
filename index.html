@@ -7,10 +7,9 @@
 
 <style>
 *{ margin:0; padding:0; box-sizing:border-box; font-family:Arial,Helvetica,sans-serif; }
-body{ background:#0d1117; display:flex; justify-content:center; align-items:center; height:100vh; color:white; }
+body{ background:#0d1117; display:flex; justify-content:center; align-items:center; min-height:100vh; color:white; padding:20px 0; }
 .card{ width:420px; background:#161b22; border:1px solid #30363d; border-radius:15px; padding:30px; text-align:center; }
 
-/* Arc Logo Style */
 .title-container { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 8px; }
 .arc-logo-box {
     width: 40px;
@@ -26,16 +25,15 @@ body{ background:#0d1117; display:flex; justify-content:center; align-items:cent
 .arc-logo-box svg { width: 24px; height: 24px; fill: white; }
 
 h1 { font-size: 24px; font-weight: bold; }
-p{ color:#9ca3af; margin-bottom:25px; }
+p{ color:#9ca3af; margin-bottom:20px; }
 
-/* Action Buttons Container */
 .btn-group { display: flex; flex-direction: column; gap: 10px; }
 button { width:100%; padding:14px; font-size:16px; border:none; border-radius:8px; cursor:pointer; background:#2563eb; color:white; font-weight:bold; transition: 0.2s; }
 button:hover { background:#1d4ed8; }
 .disconnect-btn { background: #dc2626; display: none; }
 .disconnect-btn:hover { background: #b91c1c; }
 
-.box{ margin-top:18px; padding:14px; background:#0d1117; border:1px solid #30363d; border-radius:8px; word-break:break-all; }
+.box{ margin-top:16px; padding:14px; background:#0d1117; border:1px solid #30363d; border-radius:8px; word-break:break-all; }
 .green{ color:#22c55e; }
 
 /* Modal Box Styling */
@@ -44,7 +42,6 @@ button:hover { background:#1d4ed8; }
 .wallet-option { background: #21262d; border: 1px solid #30363d; color: white; padding: 12px; margin-top: 10px; border-radius: 8px; cursor: pointer; display: flex; justify-content: flex-start; align-items: center; padding-left: 20px; gap: 12px; font-weight: bold; }
 .wallet-option:hover { background: #30363d; }
 .close-btn { float: right; color: #8b949e; font-size: 20px; cursor: pointer; }
-
 .wallet-icon { width: 22px; height: 22px; display: inline-block; vertical-align: middle; }
 </style>
 </head>
@@ -64,6 +61,14 @@ button:hover { background:#1d4ed8; }
     <div class="btn-group">
         <button id="connectBtn">Connect Wallet</button>
         <button id="disconnectBtn" class="disconnect-btn">Disconnect</button>
+    </div>
+
+    <!-- AI Trade Signal Box -->
+    <div class="box" style="border-color: #2563eb; text-align: left;">
+        <h4 style="color: #60a5fa; margin-bottom: 8px;">📊 AI Trade Signal (Python Engine)</h4>
+        <div style="font-size: 14px; margin-bottom: 4px;">BTC Price: <strong id="btcPrice">Loading...</strong> (<span id="btcChange">--</span>)</div>
+        <div style="font-size: 14px; margin-bottom: 4px;">Signal: <span id="tradeStatus" style="font-weight: bold; color: #eab308;">Analyzing...</span></div>
+        <p id="tradeSuggestion" style="font-size: 12px; color: #9ca3af; margin-top: 6px;"></p>
     </div>
 
     <div class="box">
@@ -113,7 +118,6 @@ const network = document.getElementById("network");
 let currentActiveProvider = null;
 const eip6963Providers = new Map();
 
-// 📌 EIP-6963 Provider Discovery
 window.addEventListener("eip6963:announceProvider", (event) => {
     const { info, provider } = event.detail;
     eip6963Providers.set(info.rdns, provider);
@@ -137,10 +141,28 @@ function updateUIConnected(accountAddress, chainId) {
     disconnectBtn.style.display = "block";
 }
 
-// 📌 1. MetaMask Connector
+// 📌 Load Data from Python Agent
+async function loadAgentSignal() {
+    try {
+        const res = await fetch('btc_data.json');
+        if (res.ok) {
+            const data = await res.json();
+            document.getElementById('btcPrice').innerText = data.btc_price;
+            document.getElementById('btcChange').innerText = data.change_24h;
+            document.getElementById('tradeStatus').innerText = data.status;
+            document.getElementById('tradeStatus').style.color = data.color;
+            document.getElementById('tradeSuggestion').innerText = data.suggestion;
+        }
+    } catch (e) {
+        console.log("Waiting for Python Agent Data...");
+    }
+}
+loadAgentSignal();
+setInterval(loadAgentSignal, 10000);
+
+// Connect MetaMask
 document.getElementById("connectMetaMask").onclick = async () => {
     modal.style.display = "none";
-    
     let provider = eip6963Providers.get("io.metamask");
 
     if (!provider) {
@@ -152,19 +174,13 @@ document.getElementById("connectMetaMask").onclick = async () => {
     }
 
     if (!provider) {
-        alert("MetaMask extension is not found or enabled!");
+        alert("MetaMask extension is not found!");
         return;
     }
 
     try {
         currentActiveProvider = provider;
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-
-        if (!accounts || accounts.length === 0) {
-            alert("Please unlock your MetaMask wallet!");
-            return;
-        }
-
         const chainId = await provider.request({ method: 'eth_chainId' });
         updateUIConnected(accounts[0], parseInt(chainId, 16));
     } catch (err) {
@@ -172,69 +188,28 @@ document.getElementById("connectMetaMask").onclick = async () => {
     }
 };
 
-// Generic Function for Other Wallets
+// Other Wallets
 async function connectOtherWallet(provider, walletName) {
     modal.style.display = "none";
-
-    if (!provider) {
-        alert(walletName + " extension is not installed!");
-        return;
-    }
-
+    if (!provider) { alert(walletName + " extension is not installed!"); return; }
     try {
         currentActiveProvider = provider;
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const chainId = await provider.request({ method: 'eth_chainId' });
-        
         updateUIConnected(accounts[0], parseInt(chainId, 16));
-    } catch (err) {
-        alert("Connection failed: " + err.message);
-    }
+    } catch (err) { alert("Connection failed: " + err.message); }
 }
 
-// 2. Phantom
-document.getElementById("connectPhantom").onclick = () => {
-    const provider = eip6963Providers.get("app.phantom") || window.phantom?.ethereum;
-    connectOtherWallet(provider, "Phantom");
-};
+document.getElementById("connectPhantom").onclick = () => connectOtherWallet(eip6963Providers.get("app.phantom") || window.phantom?.ethereum, "Phantom");
+document.getElementById("connectOKX").onclick = () => connectOtherWallet(eip6963Providers.get("com.okex.wallet") || window.okxwallet, "OKX Wallet");
+document.getElementById("connectBitget").onclick = () => connectOtherWallet(eip6963Providers.get("com.bitget.web3") || window.bitkeep?.ethereum || window.bitgetWallet, "Bitget Wallet");
+document.getElementById("connectCoinbase").onclick = () => connectOtherWallet(eip6963Providers.get("com.coinbase.wallet") || window.coinbaseWalletExtension, "Coinbase Wallet");
+document.getElementById("connectRabby").onclick = () => connectOtherWallet(eip6963Providers.get("io.rabby") || window.rabby, "Rabby Wallet");
 
-// 3. OKX Wallet
-document.getElementById("connectOKX").onclick = () => {
-    const provider = eip6963Providers.get("com.okex.wallet") || window.okxwallet;
-    connectOtherWallet(provider, "OKX Wallet");
-};
-
-// 4. Bitget Wallet
-document.getElementById("connectBitget").onclick = () => {
-    const provider = eip6963Providers.get("com.bitget.web3") || window.bitkeep?.ethereum || window.bitgetWallet;
-    connectOtherWallet(provider, "Bitget Wallet");
-};
-
-// 5. Coinbase Wallet
-document.getElementById("connectCoinbase").onclick = () => {
-    const provider = eip6963Providers.get("com.coinbase.wallet") || window.coinbaseWalletExtension;
-    connectOtherWallet(provider, "Coinbase Wallet");
-};
-
-// 6. Rabby Wallet
-document.getElementById("connectRabby").onclick = () => {
-    const provider = eip6963Providers.get("io.rabby") || window.rabby;
-    connectOtherWallet(provider, "Rabby Wallet");
-};
-
-// Disconnect Logic
 disconnectBtn.onclick = async () => {
     if (currentActiveProvider && currentActiveProvider.request) {
-        try {
-            await currentActiveProvider.request({
-                method: "wallet_revokePermissions",
-                params: [{ eth_accounts: {} }]
-            });
-        } catch (err) {
-            console.log("Revoke skipped/failed:", err);
-        }
+        try { await currentActiveProvider.request({ method: "wallet_revokePermissions", params: [{ eth_accounts: {} }] }); } catch (err) {}
     }
-
     currentActiveProvider = null;
     wallet.innerHTML = "Not Connected";
     network.innerHTML = "Unknown";
