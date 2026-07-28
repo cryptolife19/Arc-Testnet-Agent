@@ -99,7 +99,6 @@ button:hover { background:#1d4ed8; }
         </div>
         <div id="connectCoinbase" class="wallet-option">🔵 Coinbase Wallet</div>
         <div id="connectRabby" class="wallet-option">🐰 Rabby Wallet</div>
-        <div id="connectGeneric" class="wallet-option">🌐 Other EVM Wallet</div>
     </div>
 </div>
 
@@ -138,14 +137,12 @@ function updateUIConnected(accountAddress, chainId) {
     disconnectBtn.style.display = "block";
 }
 
-// 📌 1. MetaMask Connector (EIP-6963 First)
+// 📌 1. MetaMask Connector
 document.getElementById("connectMetaMask").onclick = async () => {
     modal.style.display = "none";
     
-    // Check EIP-6963 provider for MetaMask first
     let provider = eip6963Providers.get("io.metamask");
 
-    // Fallback if EIP-6963 isn't available
     if (!provider) {
         if (window.ethereum?.providers) {
             provider = window.ethereum.providers.find(p => p.isMetaMask && !p.isPhantom && !p.isBitget);
@@ -223,11 +220,6 @@ document.getElementById("connectCoinbase").onclick = () => {
 document.getElementById("connectRabby").onclick = () => {
     const provider = eip6963Providers.get("io.rabby") || window.rabby;
     connectOtherWallet(provider, "Rabby Wallet");
-};
-
-// 7. Generic EVM Wallet
-document.getElementById("connectGeneric").onclick = () => {
-    connectOtherWallet(window.ethereum, "EVM Wallet");
 };
 
 // Disconnect Logic
