@@ -28,7 +28,7 @@ body{ background:#0d1117; display:flex; justify-content:center; align-items:cent
 h1 { font-size: 24px; font-weight: bold; }
 p{ color:#9ca3af; margin-bottom:25px; }
 
-/* Action Buttons Container (Stacked Vertically) */
+/* Action Buttons Container */
 .btn-group { display: flex; flex-direction: column; gap: 10px; }
 button { width:100%; padding:14px; font-size:16px; border:none; border-radius:8px; cursor:pointer; background:#2563eb; color:white; font-weight:bold; transition: 0.2s; }
 button:hover { background:#1d4ed8; }
@@ -40,10 +40,13 @@ button:hover { background:#1d4ed8; }
 
 /* Modal Box Styling */
 .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
-.modal-content { background: #161b22; padding: 25px; border-radius: 12px; border: 1px solid #30363d; width: 320px; text-align: center; }
-.wallet-option { background: #21262d; border: 1px solid #30363d; color: white; padding: 12px; margin-top: 10px; border-radius: 8px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; font-weight: bold; }
+.modal-content { background: #161b22; padding: 25px; border-radius: 12px; border: 1px solid #30363d; width: 340px; text-align: center; }
+.wallet-option { background: #21262d; border: 1px solid #30363d; color: white; padding: 12px; margin-top: 10px; border-radius: 8px; cursor: pointer; display: flex; justify-content: flex-start; align-items: center; padding-left: 20px; gap: 12px; font-weight: bold; }
 .wallet-option:hover { background: #30363d; }
 .close-btn { float: right; color: #8b949e; font-size: 20px; cursor: pointer; }
+
+/* Wallet Icon Styling */
+.wallet-icon { width: 22px; height: 22px; display: inline-block; vertical-align: middle; }
 </style>
 </head>
 <body>
@@ -84,9 +87,32 @@ button:hover { background:#1d4ed8; }
 <div id="walletModal" class="modal">
     <div class="modal-content">
         <span id="closeModal" class="close-btn">&times;</span>
-        <h3>Select a Wallet</h3>
-        <div id="connectMetaMask" class="wallet-option">🦊 MetaMask</div>
-        <div id="connectPhantom" class="wallet-option">👻 Phantom / Other</div>
+        <h3 style="margin-bottom: 10px;">Select a Wallet</h3>
+        <div id="connectMetaMask" class="wallet-option">
+            🦊 MetaMask
+        </div>
+        <div id="connectPhantom" class="wallet-option">
+            👻 Phantom
+        </div>
+        <div id="connectOKX" class="wallet-option">
+            ⬛ OKX Wallet
+        </div>
+        <div id="connectBitget" class="wallet-option">
+            <svg class="wallet-icon" viewBox="0 0 32 32">
+                <rect width="32" height="32" rx="6" fill="#00f0ff"/>
+                <path d="M9 11l7 7 7-7H9z" fill="#0d1117"/>
+            </svg>
+            Bitget Wallet
+        </div>
+        <div id="connectCoinbase" class="wallet-option">
+            🔵 Coinbase Wallet
+        </div>
+        <div id="connectRabby" class="wallet-option">
+            🐰 Rabby Wallet
+        </div>
+        <div id="connectGeneric" class="wallet-option">
+            🌐 Other EVM Wallet
+        </div>
     </div>
 </div>
 
@@ -98,6 +124,8 @@ const closeModal = document.getElementById("closeModal");
 const wallet = document.getElementById("wallet");
 const network = document.getElementById("network");
 
+let currentActiveProvider = null;
+
 btn.onclick = () => {
     if (btn.innerText === "Connect Wallet") {
         modal.style.display = "flex";
@@ -106,51 +134,72 @@ btn.onclick = () => {
 closeModal.onclick = () => modal.style.display = "none";
 window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; };
 
-// MetaMask দিয়ে কানেক্ট
-document.getElementById("connectMetaMask").onclick = async () => {
+// Specific EVM Provider Logic
+async function connectSpecificWallet(provider, walletName) {
     modal.style.display = "none";
-    let provider = window.ethereum;
-
-    if (window.ethereum?.providers) {
-        provider = window.ethereum.providers.find(p => p.isMetaMask && !p.isPhantom) || window.ethereum;
-    }
 
     if (!provider) {
-        alert("MetaMask is not installed!");
+        alert(walletName + " extension is not installed in your browser!");
         return;
     }
 
     try {
-        await provider.request({
-            method: "wallet_requestPermissions",
-            params: [{ eth_accounts: {} }]
-        });
+        currentActiveProvider = provider;
         
+        // Connect Request
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const chainId = await provider.request({ method: 'eth_chainId' });
+        
         updateUIConnected(accounts[0], parseInt(chainId, 16));
     } catch (err) {
         alert("Connection failed: " + err.message);
     }
+}
+
+// 1. MetaMask
+document.getElementById("connectMetaMask").onclick = () => {
+    let provider = null;
+    if (window.ethereum?.providers) {
+        provider = window.ethereum.providers.find(p => p.isMetaMask && !p.isPhantom && !p.isBraveWallet);
+    } else if (window.ethereum?.isMetaMask && !window.ethereum?.isPhantom) {
+        provider = window.ethereum;
+    }
+    connectSpecificWallet(provider, "MetaMask");
 };
 
-// Phantom / Other দিয়ে কানেক্ট
-document.getElementById("connectPhantom").onclick = async () => {
-    modal.style.display = "none";
-    const provider = window.phantom?.ethereum || window.ethereum;
+// 2. Phantom
+document.getElementById("connectPhantom").onclick = () => {
+    const provider = window.phantom?.ethereum;
+    connectSpecificWallet(provider, "Phantom");
+};
 
-    if (!provider) {
-        alert("Phantom / Web3 Wallet is not installed!");
-        return;
-    }
+// 3. OKX Wallet
+document.getElementById("connectOKX").onclick = () => {
+    const provider = window.okxwallet;
+    connectSpecificWallet(provider, "OKX Wallet");
+};
 
-    try {
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const chainId = await provider.request({ method: 'eth_chainId' });
-        updateUIConnected(accounts[0], parseInt(chainId, 16));
-    } catch (err) {
-        alert("Connection failed: " + err.message);
-    }
+// 4. Bitget Wallet
+document.getElementById("connectBitget").onclick = () => {
+    const provider = window.bitkeep?.ethereum || window.bitgetWallet;
+    connectSpecificWallet(provider, "Bitget Wallet");
+};
+
+// 5. Coinbase Wallet
+document.getElementById("connectCoinbase").onclick = () => {
+    const provider = window.coinbaseWalletExtension;
+    connectSpecificWallet(provider, "Coinbase Wallet");
+};
+
+// 6. Rabby Wallet
+document.getElementById("connectRabby").onclick = () => {
+    const provider = window.rabby;
+    connectSpecificWallet(provider, "Rabby Wallet");
+};
+
+// 7. Generic EVM Wallet
+document.getElementById("connectGeneric").onclick = () => {
+    connectSpecificWallet(window.ethereum, "EVM Wallet");
 };
 
 function updateUIConnected(accountAddress, chainId) {
@@ -162,25 +211,20 @@ function updateUIConnected(accountAddress, chainId) {
     disconnectBtn.style.display = "block";
 }
 
-// Disconnect করার লজিক
+// Disconnect Logic
 disconnectBtn.onclick = async () => {
-    let provider = window.ethereum;
-
-    if (window.ethereum?.providers) {
-        provider = window.ethereum.providers.find(p => p.isMetaMask && !p.isPhantom) || window.ethereum;
-    }
-
-    if (provider && provider.request) {
+    if (currentActiveProvider && currentActiveProvider.request) {
         try {
-            await provider.request({
+            await currentActiveProvider.request({
                 method: "wallet_revokePermissions",
                 params: [{ eth_accounts: {} }]
             });
         } catch (err) {
-            console.log("Permission revoke failed/rejected:", err);
+            console.log("Revoke permission failed:", err);
         }
     }
 
+    currentActiveProvider = null;
     wallet.innerHTML = "Not Connected";
     network.innerHTML = "Unknown";
     btn.innerHTML = "Connect Wallet";
